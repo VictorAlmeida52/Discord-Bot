@@ -1,75 +1,18 @@
+// noinspection JSUnusedGlobalSymbols
+
 import {
   SlashCommandBuilder,
-  ChannelType,
-  TextChannel,
-  EmbedBuilder,
   ColorResolvable,
-  ApplicationCommandChoicesData,
   ChatInputCommandInteraction,
-  GuildMember,
-  GuildTextBasedChannel,
+
 } from "discord.js";
-import { Song } from "distube";
-import { color } from "../functions";
+import {runVerifications} from "../functions";
 import { SlashCommand } from "../types";
+import {buildErrorEmbed, buildSimpleEmbed} from "../factories/embed-factory";
 
 const COLOR_ERROR = process.env.COLOR_ERROR as ColorResolvable;
 const COLOR_DEFAULT = process.env.COLOR_DEFAULT as ColorResolvable;
 
-const replyNotInVoiceChannel = (interaction: ChatInputCommandInteraction) => {
-  return interaction.reply({
-    embeds: [
-      new EmbedBuilder()
-        .setColor(COLOR_ERROR)
-        .setDescription(
-          `🚫 | You must be in a voice channel to use this command!`
-        ),
-    ],
-    ephemeral: true,
-  });
-};
-
-const replyQueueNotFound = (interaction: ChatInputCommandInteraction) => {
-  return interaction.reply({
-    embeds: [
-      new EmbedBuilder()
-        .setColor(COLOR_ERROR)
-        .setDescription(`🚫 | There is nothing on the queue!`),
-    ],
-    ephemeral: true,
-  });
-};
-
-const replyNotOnBotChannel = (interaction: ChatInputCommandInteraction) => {
-  return interaction.reply({
-    embeds: [
-      new EmbedBuilder()
-        .setColor(COLOR_ERROR)
-        .setDescription(
-          `🚫 | You need to be on the same voice channel as the Bot!`
-        ),
-    ],
-    ephemeral: true,
-  });
-};
-
-const buildEmbedSimple = () => {
-  return new EmbedBuilder()
-    .setColor(COLOR_DEFAULT)
-    .setDescription(`⏩ | Skipped!`);
-};
-
-const buildEmbedWithId = (id: number, songSkip: Song) => {
-  return new EmbedBuilder()
-    .setColor(COLOR_DEFAULT)
-    .setDescription(`⏩ | Moved to song with ID: ${id}: **${songSkip.name}**!`);
-};
-
-const buildEmbedError = (id: number) => {
-  return new EmbedBuilder()
-    .setColor(COLOR_ERROR)
-    .setDescription(`🚫 | Songs with ID not found: ${id}!`);
-};
 
 const command: SlashCommand = {
   command: new SlashCommandBuilder()
@@ -135,47 +78,42 @@ const command: SlashCommand = {
     }
   },
   execute: async (interaction) => {
-    const { guild, member } = interaction;
 
     // need verification before performing action
-    const voiceChannel = (member as GuildMember).voice.channel;
-    const queue = interaction.client.distube.getQueue(
-      interaction as ChatInputCommandInteraction
-    );
+    const canUseCommand = await runVerifications(interaction, {
+      verifyVoiceChannel: true,
+      verifyQueue: true,
+      verifyOnBotVoiceChannel: true
+    })
+    if (!canUseCommand) return;
 
-    if (!voiceChannel)
-      return replyNotInVoiceChannel(interaction as ChatInputCommandInteraction);
-    if (!queue)
-      return replyQueueNotFound(interaction as ChatInputCommandInteraction);
-    if (
-      guild?.members.me?.voice.channelId !==
-      (member as GuildMember).voice.channelId
-    )
-      return replyNotOnBotChannel(interaction as ChatInputCommandInteraction);
+    const queue = interaction.client.distube.getQueue(
+        interaction as ChatInputCommandInteraction
+    );
 
     const id = Number(interaction.options.get("id")?.value);
 
     if (!id) {
-      await queue.skip();
+      await queue!!.skip();
       return await interaction.reply({
-        embeds: [buildEmbedSimple()],
+        embeds: [buildSimpleEmbed(COLOR_DEFAULT, `⏩ | Skipped!`)],
       });
     }
 
     if (id) {
       try {
-        const songSkip = queue.songs[id - 1];
+        const songSkip = queue!!.songs[id - 1];
         await interaction.client.distube.jump(
           interaction as ChatInputCommandInteraction,
           id - 1
         );
         await interaction.reply({
-          embeds: [buildEmbedWithId(id, songSkip)],
+          embeds: [buildSimpleEmbed(COLOR_DEFAULT, `⏩ | Moved to song with ID: ${id}: **${songSkip.name}**!`)],
         });
       } catch (err) {
         console.log(err);
         await interaction.reply({
-          embeds: [buildEmbedError(id)],
+          embeds: [buildErrorEmbed(COLOR_ERROR, `🚫 | Songs with ID not found: ${id}!`)],
           ephemeral: true,
         });
       }
@@ -184,4 +122,5 @@ const command: SlashCommand = {
   cooldown: 10,
 };
 
-export default command;
+
+export default command

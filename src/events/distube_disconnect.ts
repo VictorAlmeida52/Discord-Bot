@@ -1,15 +1,13 @@
+// noinspection JSUnusedGlobalSymbols
+
 import {
-  ChatInputCommandInteraction,
-  Client,
   ColorResolvable,
   EmbedBuilder,
 } from "discord.js";
 import { BotEvent } from "../types";
-import { color } from "../functions";
-import { Queue, Song } from "distube";
+import { Queue } from "distube";
 
 const COLOR_ERROR = process.env.COLOR_ERROR as ColorResolvable;
-const Format = Intl.NumberFormat();
 
 const buildEmbed = () => {
   return new EmbedBuilder()
@@ -36,4 +34,5 @@ const event: BotEvent = {
   },
 };
 
-export default event;
+
+export default event

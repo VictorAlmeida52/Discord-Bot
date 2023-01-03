@@ -1,3 +1,5 @@
+// noinspection JSUnusedGlobalSymbols
+
 import { Client } from "discord.js";
 import { BotEvent } from "../types";
 import { color } from "../functions";
@@ -12,4 +14,4 @@ const event : BotEvent = {
     }
 }
 
-export default event;
+export default event

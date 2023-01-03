@@ -1,63 +1,17 @@
+// noinspection JSUnusedGlobalSymbols
+
 import {
   SlashCommandBuilder,
   ChannelType,
-  TextChannel,
-  EmbedBuilder,
   ColorResolvable,
-  ApplicationCommandChoicesData,
   ChatInputCommandInteraction,
-  GuildMember,
-  GuildTextBasedChannel,
+
 } from "discord.js";
-import { Song } from "distube";
-import { color } from "../functions";
+import {runVerifications} from "../functions";
 import { SlashCommand } from "../types";
+import {buildSimpleEmbed} from "../factories/embed-factory";
 
-const COLOR_ERROR = process.env.COLOR_ERROR as ColorResolvable;
 const COLOR_DEFAULT = process.env.COLOR_DEFAULT as ColorResolvable;
-
-const replyNotInVoiceChannel = (interaction: ChatInputCommandInteraction) => {
-  return interaction.reply({
-    embeds: [
-      new EmbedBuilder()
-        .setColor(COLOR_ERROR)
-        .setDescription(
-          `🚫 | You must be in a voice channel to use this command!`
-        ),
-    ],
-    ephemeral: true,
-  });
-};
-
-const replyQueueNotFound = (interaction: ChatInputCommandInteraction) => {
-  return interaction.reply({
-    embeds: [
-      new EmbedBuilder()
-        .setColor(COLOR_ERROR)
-        .setDescription(`🚫 | There is nothing on the queue!`),
-    ],
-    ephemeral: true,
-  });
-};
-
-const replyNotOnBotChannel = (interaction: ChatInputCommandInteraction) => {
-  return interaction.reply({
-    embeds: [
-      new EmbedBuilder()
-        .setColor(COLOR_ERROR)
-        .setDescription(
-          `🚫 | You need to be on the same voice channel as the Bot!`
-        ),
-    ],
-    ephemeral: true,
-  });
-};
-
-const buildEmbed = (filter: string) => {
-  return new EmbedBuilder()
-    .setColor(COLOR_DEFAULT)
-    .setDescription(`Filters \`${filter}\` have been updated!`);
-};
 
 const command: SlashCommand = {
   command: new SlashCommandBuilder()
@@ -91,37 +45,35 @@ const command: SlashCommand = {
     );
   },
   execute: async (interaction) => {
-    const { guild, member, client } = interaction;
+    const { client } = interaction;
 
     // need verification before performing action
-    const voiceChannel = (member as GuildMember).voice.channel;
-    const queue = interaction.client.distube.getQueue(
-      interaction as ChatInputCommandInteraction
-    );
+    const canUseCommand = await runVerifications(interaction, {
+      verifyVoiceChannel: true,
+      verifyQueue: true,
+      verifyOnBotVoiceChannel: true
+    })
+    if (!canUseCommand) return;
 
-    if (!voiceChannel)
-      return replyNotInVoiceChannel(interaction as ChatInputCommandInteraction);
-    if (!queue)
-      return replyQueueNotFound(interaction as ChatInputCommandInteraction);
-    if (
-      guild?.members.me?.voice.channelId !==
-      (member as GuildMember).voice.channelId
-    )
-      return replyNotOnBotChannel(interaction as ChatInputCommandInteraction);
+    const queue = interaction.client.distube.getQueue(
+        interaction as ChatInputCommandInteraction
+    );
 
     const filter = interaction.options.get("filter")?.value?.toString() ?? "";
 
-    if (filter === "off" && queue.filters.size) queue.filters.clear();
+    if (filter === "off" && queue!!.filters.size) queue!!.filters.clear();
     else if (Object.keys(client.distube.filters).includes(filter)) {
-      if (queue.filters.has(filter)) queue.filters.remove;
-      else queue.filters.add(filter);
+      if (queue!!.filters.has(filter)) queue!!.filters.remove(filter);
+      else queue!!.filters.add(filter);
     }
 
-    interaction.reply({
-      embeds: [buildEmbed(filter)],
+    const embed = buildSimpleEmbed(COLOR_DEFAULT, `Filters \`${filter}\` have been updated!`)
+    await interaction.reply({
+      embeds: [embed],
     });
   },
   cooldown: 10,
 };
 
-export default command;
+
+export default command

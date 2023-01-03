@@ -1,44 +1,20 @@
+// noinspection JSUnusedGlobalSymbols
+
 import {
   ChatInputCommandInteraction,
   ColorResolvable,
-  EmbedBuilder,
   GuildMember,
   GuildTextBasedChannel,
   SlashCommandBuilder,
 } from "discord.js";
-import { color } from "../functions";
+import {runVerifications} from "../functions";
 import { SlashCommand } from "../types";
+import {buildErrorEmbed, buildSimpleEmbed} from "../factories/embed-factory";
 
 const COLOR_ERROR = process.env.COLOR_ERROR as ColorResolvable;
 const COLOR_DEFAULT = process.env.COLOR_DEFAULT as ColorResolvable;
 
-const replyNotInVoiceChannel = (interaction: ChatInputCommandInteraction) => {
-  return interaction.reply({
-    embeds: [
-      new EmbedBuilder()
-        .setColor(COLOR_ERROR)
-        .setDescription(
-          `🚫 | You must be in a voice channel to use this command!`
-        ),
-    ],
-    ephemeral: true,
-  });
-};
-
-const replyNotOnBotChannel = (interaction: ChatInputCommandInteraction) => {
-  return interaction.reply({
-    embeds: [
-      new EmbedBuilder()
-        .setColor(COLOR_ERROR)
-        .setDescription(
-          `🚫 | You need to be on the same voice channel as the Bot!`
-        ),
-    ],
-    ephemeral: true,
-  });
-};
-
-const PlayCommand: SlashCommand = {
+const command: SlashCommand = {
   command: new SlashCommandBuilder()
     .setName("play")
     .setDescription("Play a song.")
@@ -49,7 +25,7 @@ const PlayCommand: SlashCommand = {
         .setRequired(true);
     }),
   execute: async (interaction) => {
-    const { options, guild, member, channel } = interaction;
+    const { options, member, channel } = interaction;
 
     // need verification before performing action
     const voiceChannel = (member as GuildMember).voice.channel;
@@ -59,48 +35,35 @@ const PlayCommand: SlashCommand = {
 
     const song = options.get("song")?.value?.toString() ?? "";
 
-    if (!voiceChannel)
-      return replyNotInVoiceChannel(interaction as ChatInputCommandInteraction);
-    if (queue)
-      if (
-        guild?.members.me?.voice.channelId !==
-        (member as GuildMember).voice.channelId
-      )
-        return replyNotOnBotChannel(interaction as ChatInputCommandInteraction);
+    const canUseCommand = await runVerifications(interaction, {
+      verifyOnBotVoiceChannel: !!queue,
+      verifyQueue: !!queue,
+      verifyVoiceChannel: true
+    })
+    if (!canUseCommand) return;
 
     await interaction.reply({
-      embeds: [
-        new EmbedBuilder()
-          .setColor(COLOR_DEFAULT)
-          .setDescription(`🔍 | Looking for a song...`),
-      ],
+      embeds: [buildSimpleEmbed(COLOR_DEFAULT, `🔍 | Looking for a song...!`)],
       ephemeral: true,
     });
 
     try {
-      await interaction.client.distube.play(voiceChannel, song, {
+      await interaction.client.distube.play(voiceChannel!!, song, {
         textChannel: channel as GuildTextBasedChannel,
         member: member as GuildMember,
       });
 
       await interaction.editReply({
-        embeds: [
-          new EmbedBuilder()
-            .setColor(COLOR_DEFAULT)
-            .setDescription(`🔍 | Successful search!`),
-        ],
+        embeds: [buildSimpleEmbed(COLOR_DEFAULT, `🔍 | Successful search!`)],
       });
     } catch (error) {
       await interaction.editReply({
-        embeds: [
-          new EmbedBuilder()
-            .setColor(COLOR_ERROR)
-            .setDescription(`🚫 | Não foi possível adicionar à fila!`),
-        ],
+        embeds: [buildErrorEmbed(COLOR_ERROR, 'Could not add to the queue')],
       });
     }
   },
   cooldown: 10,
 };
 
-export default PlayCommand;
+
+export default command

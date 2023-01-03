@@ -1,3 +1,5 @@
+// noinspection JSUnusedGlobalSymbols
+
 import { BotEvent } from "../types";
 import { Queue } from "distube";
 
@@ -10,4 +12,5 @@ const event: BotEvent = {
   },
 };
 
-export default event;
+
+export default event

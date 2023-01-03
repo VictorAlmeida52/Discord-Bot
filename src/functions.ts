@@ -1,6 +1,9 @@
 import chalk from "chalk";
 import {
+    ChatInputCommandInteraction,
     Client,
+    ColorResolvable,
+    CommandInteraction,
     Guild,
     GuildMember,
     PermissionFlagsBits,
@@ -15,6 +18,7 @@ import mongoose from "mongoose";
 import {REST} from "discord.js";
 import {join} from "path";
 import {readdirSync} from "fs";
+import {buildErrorEmbed} from "./factories/embed-factory";
 
 type colorType = "text" | "variable" | "error";
 
@@ -101,7 +105,7 @@ export const unregisterCommands = async (client: Client, token: string, clientId
         .then((data: any) => {
             const promises: any[] = [];
             for (const command of data) {
-                const deleteUrl:  `/${string}` = `${route}/${command.id}`
+                const deleteUrl: `/${string}` = `${route}/${command.id}`
                 promises.push(rest.delete(deleteUrl));
             }
             return Promise.all(promises);
@@ -134,3 +138,78 @@ export const registerCommands = async (client: Client, token: string, clientId: 
             console.log(e);
         });
 };
+
+const replyInVoiceChannelVerification = (color: ColorResolvable, interaction: CommandInteraction) => {
+    const embed = buildErrorEmbed(color, `🚫 | You must be in a voice channel to use this command!`);
+    return interaction.reply({
+        embeds: [embed],
+        ephemeral: true,
+    });
+}
+
+const replyQueueEmptyVerification = (color: ColorResolvable, interaction: CommandInteraction) => {
+    const embed = buildErrorEmbed(color, `🚫 | There is nothing on the queue!`);
+    return interaction.reply({
+        embeds: [embed],
+        ephemeral: true,
+    });
+}
+
+const replyOnBotVoiceChannelVerification = (color: ColorResolvable, interaction: CommandInteraction) => {
+    const embed = buildErrorEmbed(color, `🚫 | You need to be on the same voice channel as the Bot!`);
+    return interaction.reply({
+        embeds: [embed],
+        ephemeral: true,
+    });
+}
+
+
+export interface VerificationOptions {
+    verifyVoiceChannel: boolean;
+    verifyQueue: boolean;
+    verifyOnBotVoiceChannel: boolean;
+}
+
+export const runVerifications = async (interaction: CommandInteraction, verificationOptions: VerificationOptions) => {
+    const {guild, member} = interaction;
+    const {verifyVoiceChannel, verifyQueue, verifyOnBotVoiceChannel} = verificationOptions
+
+    let canUseCommand = true;
+    if (verifyVoiceChannel) {
+        const voiceChannel = (member as GuildMember).voice.channel;
+        if (!voiceChannel) {
+            canUseCommand = false;
+            await replyInVoiceChannelVerification(themeColors.error as ColorResolvable, interaction)
+        }
+    }
+
+    if (verifyQueue) {
+        const queue = interaction.client.distube.getQueue(interaction as ChatInputCommandInteraction);
+        if (!queue) {
+            canUseCommand = false;
+            await replyQueueEmptyVerification(themeColors.error as ColorResolvable, interaction)
+        }
+    }
+
+    if (verifyOnBotVoiceChannel) {
+        if (guild?.members.me?.voice.channelId !== (member as GuildMember).voice.channelId) {
+            canUseCommand = false;
+            await replyOnBotVoiceChannelVerification(themeColors.error as ColorResolvable, interaction)
+        }
+    }
+
+    return canUseCommand
+}
+
+
+
+
+
+
+
+
+
+
+
+
+

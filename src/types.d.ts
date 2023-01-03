@@ -1,10 +1,12 @@
+// noinspection JSUnusedGlobalSymbols
+
 import {
   SlashCommandBuilder,
   CommandInteraction,
   Collection,
   PermissionResolvable,
   Message,
-  AutocompleteInteraction,
+  AutocompleteInteraction, ContextMenuCommandBuilder, ContextMenuCommandInteraction,
 } from "discord.js";
 import { DisTube } from "distube";
 import mongoose from "mongoose";
@@ -14,6 +16,11 @@ export interface SlashCommand {
   execute: (interaction: CommandInteraction) => void;
   autocomplete?: (interaction: AutocompleteInteraction) => void;
   cooldown?: number; // in seconds
+}
+
+export interface ContextMenuCommand {
+  command: ContextMenuCommandBuilder | any;
+  execute: (interaction: ContextMenuCommandInteraction) => void;
 }
 
 export interface Command {
@@ -44,6 +51,7 @@ export interface BotEvent {
 
 declare global {
   namespace NodeJS {
+    // noinspection JSUnusedGlobalSymbols
     interface ProcessEnv {
       TOKEN: string;
       CLIENT_ID: string;
@@ -61,6 +69,7 @@ declare global {
 declare module "discord.js" {
   export interface Client {
     slashCommands: Collection<string, SlashCommand>;
+    contextMenuCommands: Collection<string, ContextMenuCommand>;
     commands: Collection<string, Command>;
     cooldowns: Collection<string, number>;
     distube: DisTube;

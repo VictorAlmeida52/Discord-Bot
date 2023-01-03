@@ -1,88 +1,16 @@
+// noinspection JSUnusedGlobalSymbols
+
 import {
   SlashCommandBuilder,
   ChannelType,
-  TextChannel,
-  EmbedBuilder,
   ColorResolvable,
-  ApplicationCommandChoicesData,
   ChatInputCommandInteraction,
-  GuildMember,
-  GuildTextBasedChannel,
-  Client,
 } from "discord.js";
-import { Song } from "distube";
-import { color } from "../functions";
+import { runVerifications} from "../functions";
 import { SlashCommand } from "../types";
+import {buildLoopEmbed} from "../factories/embed-factory";
 
-const COLOR_ERROR = process.env.COLOR_ERROR as ColorResolvable;
 const COLOR_DEFAULT = process.env.COLOR_DEFAULT as ColorResolvable;
-
-const replyNotInVoiceChannel = (interaction: ChatInputCommandInteraction) => {
-  return interaction.reply({
-    embeds: [
-      new EmbedBuilder()
-        .setColor(COLOR_ERROR)
-        .setDescription(
-          `🚫 | You must be in a voice channel to use this command!`
-        ),
-    ],
-    ephemeral: true,
-  });
-};
-
-const replyQueueNotFound = (interaction: ChatInputCommandInteraction) => {
-  return interaction.reply({
-    embeds: [
-      new EmbedBuilder()
-        .setColor(COLOR_ERROR)
-        .setDescription(`🚫 | There is nothing on the queue!`),
-    ],
-    ephemeral: true,
-  });
-};
-
-const replyNotOnBotChannel = (interaction: ChatInputCommandInteraction) => {
-  return interaction.reply({
-    embeds: [
-      new EmbedBuilder()
-        .setColor(COLOR_ERROR)
-        .setDescription(
-          `🚫 | You need to be on the same voice channel as the Bot!`
-        ),
-    ],
-    ephemeral: true,
-  });
-};
-
-const createEmbedRepeatModeOff = (client: Client) => {
-  return new EmbedBuilder()
-    .setColor(COLOR_DEFAULT)
-    .setAuthor({
-      name: "Repeat mode",
-      iconURL: client.user?.displayAvatarURL(),
-    })
-    .setDescription(`🔁 | Repeat mode is now off!`);
-};
-
-const createEmbedEnableLoop = (client: Client) => {
-  return new EmbedBuilder()
-    .setColor(COLOR_DEFAULT)
-    .setAuthor({
-      name: "Repeat mode",
-      iconURL: client.user?.displayAvatarURL(),
-    })
-    .setDescription(`🔁 | Enabled song loop!`);
-};
-
-const createEmbedEnablePlaylistLoop = (client: Client) => {
-  return new EmbedBuilder()
-    .setColor(COLOR_DEFAULT)
-    .setAuthor({
-      name: "Repeat mode",
-      iconURL: client.user?.displayAvatarURL(),
-    })
-    .setDescription(`🔁 | Enabled playlist loop!`);
-};
 
 const command: SlashCommand = {
   command: new SlashCommandBuilder()
@@ -112,45 +40,42 @@ const command: SlashCommand = {
     );
   },
   execute: async (interaction) => {
-    const { guild, member, options, client } =
+    const { options, client } =
       interaction as ChatInputCommandInteraction;
 
     // need verification before performing action
-    const voiceChannel = (member as GuildMember).voice.channel;
-    const queue = interaction.client.distube.getQueue(
-      interaction as ChatInputCommandInteraction
-    );
+    const canUseCommand = await runVerifications(interaction, {
+      verifyVoiceChannel: true,
+      verifyQueue: true,
+      verifyOnBotVoiceChannel: true
+    })
+    if (!canUseCommand) return;
 
-    if (!voiceChannel)
-      return replyNotInVoiceChannel(interaction as ChatInputCommandInteraction);
-    if (!queue)
-      return replyQueueNotFound(interaction as ChatInputCommandInteraction);
-    if (
-      guild?.members.me?.voice.channelId !==
-      (member as GuildMember).voice.channelId
-    )
-      return replyNotOnBotChannel(interaction as ChatInputCommandInteraction);
+    const queue = interaction.client.distube.getQueue(
+        interaction as ChatInputCommandInteraction
+    );
 
     const loop = options.get("type")?.value?.toString() ?? "";
 
     if (loop === "Turn off repeat mode") {
-      queue.setRepeatMode(0);
-      interaction.reply({
-        embeds: [createEmbedRepeatModeOff(client)],
+      queue!!.setRepeatMode(0);
+      await interaction.reply({
+        embeds: [buildLoopEmbed(COLOR_DEFAULT, 'off', client.user?.displayAvatarURL())],
       });
     } else if (loop === "Repeat the song") {
-      queue.setRepeatMode(1);
-      interaction.reply({
-        embeds: [createEmbedEnableLoop(client)],
+      queue!!.setRepeatMode(1);
+      await interaction.reply({
+        embeds: [buildLoopEmbed(COLOR_DEFAULT, 'song', client.user?.displayAvatarURL())],
       });
     } else if (loop === "Repeat song list") {
-      queue.setRepeatMode(2);
-      interaction.reply({
-        embeds: [createEmbedEnablePlaylistLoop(client)],
+      queue!!.setRepeatMode(2);
+      await interaction.reply({
+        embeds: [buildLoopEmbed(COLOR_DEFAULT, 'list', client.user?.displayAvatarURL())],
       });
     }
   },
   cooldown: 10,
 };
 
-export default command;
+
+export default command

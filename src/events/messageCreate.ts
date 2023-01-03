@@ -1,3 +1,5 @@
+// noinspection JSUnusedGlobalSymbols
+
 import { ChannelType, Message } from "discord.js";
 import { checkPermissions, getGuildOption, sendTimedMessage } from "../functions";
 import { BotEvent } from "../types";

@@ -1,3 +1,5 @@
+// noinspection JSUnusedGlobalSymbols
+
 import { Interaction } from "discord.js";
 import { BotEvent } from "../types";
 
@@ -22,7 +24,8 @@ const event : BotEvent = {
                 interaction.client.cooldowns.set(`${interaction.commandName}-${interaction.user.username}`, Date.now() + command.cooldown * 1000)
             }
             command.execute(interaction)
-        } else if (interaction.isAutocomplete()) {
+        }
+        else if (interaction.isAutocomplete()) {
             const command = interaction.client.slashCommands.get(interaction.commandName);
             if (!command) {
                 console.error(`No command matching ${interaction.commandName} was found.`);
@@ -35,7 +38,20 @@ const event : BotEvent = {
                 console.error(error);
             }
         }
+        else if (interaction.isContextMenuCommand()) {
+            const { client, commandName } = interaction
+            const { slashCommands } = client
+
+            const contextCommand = slashCommands.get(commandName)
+            if(!contextCommand) return;
+
+            try {
+                contextCommand.execute(interaction)
+            } catch (e) {
+                console.error(e);
+            }
+        }
     }
 }
 
-export default event;
+export default event

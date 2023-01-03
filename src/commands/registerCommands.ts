@@ -1,3 +1,5 @@
+// noinspection JSUnusedGlobalSymbols
+
 import {PermissionFlagsBits} from "discord.js";
 import {Command} from "../types";
 import {registerCommands} from "../functions";
@@ -36,4 +38,5 @@ const command: Command = {
     permissions: ["Administrator", PermissionFlagsBits.ManageEmojisAndStickers], // to test
 };
 
-export default command;
+
+export default command

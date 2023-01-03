@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, ChannelType, TextChannel, EmbedBuilder, ColorResolvable, ApplicationCommandChoicesData } from "discord.js"
+import { SlashCommandBuilder, ChannelType, TextChannel, EmbedBuilder, ColorResolvable } from "discord.js"
 import { SlashCommand } from "../types";
 
 const command: SlashCommand = {
@@ -91,10 +91,10 @@ const command: SlashCommand = {
         .setTimestamp()
         .setFooter({ text: "Test embed message", iconURL: interaction.client.user?.avatarURL() || undefined });
       let selectedTextChannel = interaction.channel?.client.channels.cache.get(options.channel.toString()) as TextChannel
-      selectedTextChannel.send({ embeds: [embed] });
+      await selectedTextChannel.send({ embeds: [embed] });
       return interaction.editReply({ content: "Embed message successfully sent." })
     } catch (error) {
-      interaction.editReply({ content: "Something went wrong..." });
+      await interaction.editReply({ content: "Something went wrong..." });
     }
 
   },

@@ -20,7 +20,7 @@ const client = new Client({
     GuildVoiceStates,
   ],
 });
-import { Command, SlashCommand } from "./types";
+import {Command, ContextMenuCommand, SlashCommand} from "./types";
 import { config } from "dotenv";
 import { readdirSync } from "fs";
 import { join } from "path";
@@ -30,6 +30,7 @@ import { SoundCloudPlugin } from "@distube/soundcloud";
 config();
 
 client.slashCommands = new Collection<string, SlashCommand>();
+client.contextMenuCommands = new Collection<string, ContextMenuCommand>();
 client.commands = new Collection<string, Command>();
 client.cooldowns = new Collection<string, number>();
 client.distube = new DisTube(client, {
@@ -51,4 +52,5 @@ readdirSync(handlersDir).forEach((handler) => {
   require(`${handlersDir}/${handler}`)(client);
 });
 
-client.login(process.env.TOKEN);
+
+client.login(process.env.TOKEN).then();
