@@ -29,7 +29,7 @@ module.exports = (client: Client) => {
   const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
 
   rest
-    .put(Routes.applicationCommands(process.env.CLIENT_ID), {
+    .put(Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.DEFAULT_GUILD), {
       body: slashCommands.map((command) => command.toJSON()),
     })
     .then((data: any) => {

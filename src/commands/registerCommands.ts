@@ -4,12 +4,16 @@ import {registerCommands} from "../functions";
 
 const token = process.env.TOKEN;
 const clientId = process.env.CLIENT_ID;
+const ownerId = process.env.OWNER_ID;
 
 const command: Command = {
     name: "register",
     execute: async (message, args) => {
         const {guildId, client, member} = message;
         const [cmdName, mode] = args
+
+        if(!member) return
+        if (!(member.id.valueOf() === ownerId)) return;
 
         if (!mode) {
             return message.channel.send(`Usage: ${cmdName} [global/guild]`);
@@ -28,7 +32,6 @@ const command: Command = {
             message.channel.send(`Invalid mode.`);
         }
     },
-    cooldown: 10,
     aliases: [""],
     permissions: ["Administrator", PermissionFlagsBits.ManageEmojisAndStickers], // to test
 };

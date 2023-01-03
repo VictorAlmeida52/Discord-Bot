@@ -96,19 +96,16 @@ export const unregisterCommands = async (client: Client, token: string, clientId
     const route = getRoute(clientId, options);
     if (!route) return;
 
-    rest.get(route).then((data: any) => {
-        const promises: any[] = [];
-        for (const command of data) {
-            const id: string = command.id;
-            client.application?.commands
-                .fetch(id)
-                .then((cmd) => {
-                    promises.push(cmd.delete());
-                })
-                .catch(console.error);
-        }
-        return Promise.all(promises);
-    });
+    rest
+        .get(route)
+        .then((data: any) => {
+            const promises: any[] = [];
+            for (const command of data) {
+                const deleteUrl:  `/${string}` = `${route}/${command.id}`
+                promises.push(rest.delete(deleteUrl));
+            }
+            return Promise.all(promises);
+        });
 };
 
 export const registerCommands = async (client: Client, token: string, clientId: string, options: CommandRegistrationOptions) => {

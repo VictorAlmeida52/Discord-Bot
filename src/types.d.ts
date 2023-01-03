@@ -47,11 +47,13 @@ declare global {
     interface ProcessEnv {
       TOKEN: string;
       CLIENT_ID: string;
+      DEFAULT_GUILD: string;
       PREFIX: string;
       MONGO_URI: string;
       MONGO_DATABASE_NAME: string;
       COLOR_DEFAULT: string;
       COLOR_ERROR: string;
+      OWNER_ID: string;
     }
   }
 }
