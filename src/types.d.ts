@@ -64,3 +64,8 @@ declare module "discord.js" {
     distube: DisTube;
   }
 }
+
+export interface CommandRegistrationOptions {
+  type: string;
+  guildId?: string;
+}
