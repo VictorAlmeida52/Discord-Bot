@@ -8,6 +8,9 @@ const event : BotEvent = {
     name: "ready",
     once: true,
     execute: (client : Client) => {
+        client.users.fetch(process.env.OWNER_ID).then(async (user) => {
+            await user.send(`I am now online`);
+        });
         console.log(
             color("text", `💪 Logged in as ${color("variable", client.user?.tag)}`)
         )
